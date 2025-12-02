@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Раунд 2 — Правда или миф?</title>
+<style>
+body { margin:0; padding:0; font-family:Arial; background:#e8f5e9; }
+.header { width:100%; background:#1b5e20; color:white; padding:20px 0; text-align:center; font-size:34px; font-weight:bold; }
+.teams-container { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin:20px 0; }
+.team-round { width:160px; height:160px; background:white; border-radius:15px; display:flex; flex-direction:column; justify-content:center; align-items:center; box-shadow:0 0 10px rgba(0,0,0,0.2); font-size:18px; font-weight:bold; }
+.score { font-size:30px; margin:10px 0; }
+.question-block { background:white; width:80%; margin:15px auto; padding:20px; border-radius:15px; font-size:22px; text-align:center; cursor:pointer; box-shadow:0 0 10px rgba(0,0,0,0.2); transition:0.2s; }
+.question-block:hover { transform:scale(1.02); background:#dcedc8; }
+.disabled { background:#bdbdbd !important; color:#555 !important; pointer-events:none; }
+#modal { position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center; }
+#modal-content { background:white; padding:25px; width:600px; border-radius:15px; text-align:center; }
+#feedback { font-size:22px; margin-top:15px; font-weight:bold; }
+.btn { padding:6px 14px; font-size:18px; margin:3px; border:none; border-radius:6px; cursor:pointer; background:#43a047; color:white; }
+.btn.minus { background:#c62828; }
+</style>
+</head>
+<body>
+
+<div class="header">Раунд 2 — Правда или миф?</div>
+
+<h1>Счёт команд</h1>
+<div class="teams-container" id="teams-score"></div>
+
+<h1>Вопросы</h1>
+<div id="questions-container"></div>
+
+<!-- МОДАЛКА -->
+<div id="modal">
+    <div id="modal-content">
+        <h2 id="question-text"></h2>
+
+        <label>Выберите команду:</label><br>
+        <select id="team-select" style="font-size:18px; margin:10px 0;"></select><br>
+
+        <button class="btn" onclick="answer(true)">Правда</button>
+        <button class="btn minus" onclick="answer(false)">Миф</button>
+
+        <div id="feedback"></div>
+        <br>
+        <button class="btn" onclick="closeModal()">Закрыть</button>
+    </div>
+</div>
+
+<script>
+// Подгружаем команды из localStorage
+let teams=[];
+for(let i=1;i<=5;i++){
+    let name = localStorage.getItem("team"+i) || ("Команда "+i);
+    teams.push({name:name, score:0});
+}
+
+function renderTeams(){
+    const container = document.getElementById("teams-score");
+    container.innerHTML="";
+    teams.forEach((t,i)=>{
+        let div = document.createElement("div");
+        div.className="team-round";
+        div.innerHTML = `${t.name}<div class="score" id="s${i}">${t.score}</div>`;
+        container.appendChild(div);
+    });
+}
+
+// 10 вопросов
+const questions = [
+    "Курение снижает уровень витамина C.", 
+    "Алкоголь улучшает качество сна.",
+    "Ходьба 30 мин ежедневно снижает риск болезней сердца.",
+    "Энергетические напитки повышают концентрацию надолго без вреда.",
+    "Регулярный сон по 7–9 часов способствует укреплению иммунитета.",
+    "Сахар в больших количествах вызывает зависимость.",
+    "Стресс может повышать риск сердечно-сосудистых заболеваний.",
+    "Витамины С и D укрепляют иммунную систему.",
+    "Слишком много соли не влияет на давление.",
+    "Физическая активность снижает риск депрессии."
+];
+const correct = [true,false,true,false,true,true,true,true,false,true];
+
+let answered = Array(questions.length).fill(false);
+let currentQ = null;
+
+function renderQuestions(){
+    let c=document.getElementById("questions-container");
+    c.innerHTML="";
+    questions.forEach((q,i)=>{
+        let div=document.createElement("div");
+        div.className="question-block";
+        div.innerText="Вопрос "+(i+1);
+        if(answered[i]){
+            div.classList.add("disabled");
+        } else {
+            div.onclick = ()=> openModal(i);
+        }
+        c.appendChild(div);
+    });
+}
+
+function fillTeamSelect(){
+    const sel = document.getElementById("team-select");
+    sel.innerHTML="";
+    teams.forEach((t,i)=>{
+        let opt = document.createElement("option");
+        opt.value=i; opt.textContent=t.name;
+        sel.appendChild(opt);
+    });
+}
+
+// Модалка
+function openModal(i){
+    currentQ=i;
+    document.getElementById("question-text").innerText=questions[i];
+    document.getElementById("feedback").innerText="";
+    document.getElementById("modal").style.display="flex";
+}
+
+function closeModal(){ 
+    document.getElementById("modal").style.display="none"; 
+    renderQuestions();
+}
+
+// Ответ
+function answer(val){
+    let teamIdx = parseInt(document.getElementById("team-select").value);
+    if(val===correct[currentQ]) teams[teamIdx].score++;
+    else teams[teamIdx].score--;
+    document.getElementById("s"+teamIdx).innerText = teams[teamIdx].score;
+    document.getElementById("feedback").innerText = val===correct[currentQ] ? "Правильно! +1" : "Неверно. -1";
+    answered[currentQ]=true;
+    renderQuestions();
+}
+
+// Инициализация
+renderTeams();
+renderQuestions();
+fillTeamSelect();
+</script>
+
+</body>
+</html>

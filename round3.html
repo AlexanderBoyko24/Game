@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Раунд 3 — Блиц</title>
+<style>
+    body { font-family: Arial, sans-serif; background:#e8f5e9; padding: 20px; }
+    h1 { text-align: center; }
+    .teams-container { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin:20px 0; }
+    .team-round { width:160px; height:160px; background:white; border-radius:15px; display:flex; flex-direction:column; justify-content:center; align-items:center; box-shadow:0 0 10px rgba(0,0,0,0.2); font-size:18px; font-weight:bold; }
+    .score { font-size:30px; margin:10px 0; }
+    .btn { padding:6px 14px; font-size:18px; margin:3px; border:none; background:#43a047; color:white; border-radius:6px; cursor:pointer; }
+    .btn.minus { background:#c62828; }
+    .question-list { display:flex; flex-direction:column; gap:10px; max-width:400px; margin:0 auto; }
+    .question-btn { padding:15px; font-size:18px; border:none; background:#4CAF50; color:white; cursor:pointer; border-radius:8px; transition:0.2s; }
+    .question-btn:disabled { background:gray; cursor:not-allowed; }
+    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; }
+    .modal-content { background:white; padding:25px; width:400px; border-radius:12px; text-align:center; }
+    .counter { font-size:38px; margin:10px 0; font-weight:bold; }
+    #timer { font-size:28px; color:#d32f2f; font-weight:bold; margin-bottom:15px; }
+</style>
+</head>
+<body>
+
+<h1>Раунд 3 — Блиц: ЗОЖ за 30 секунд</h1>
+
+<h2>Счёт команд</h2>
+<div class="teams-container" id="teams-score"></div>
+
+<h2>Вопросы</h2>
+<div class="question-list" id="questions-container"></div>
+
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <h2 id="question-title"></h2>
+        <p id="task-text"></p>
+
+        <label>Выберите команду:</label><br>
+        <select id="team-select" style="font-size:18px; margin:10px 0;"></select><br>
+
+        <h3>⏳ Осталось времени: <span id="timer">30</span> сек</h3>
+        <div class="counter" id="counter">0</div>
+
+        <button class="btn" onclick="addPoint()">+1 балл</button><br>
+        <button class="btn minus" onclick="closeModal()">Назад</button>
+    </div>
+</div>
+
+<script>
+// ==== Названия команд из localStorage ====
+let teams = [];
+for(let i=1;i<=5;i++){
+    teams.push({name: localStorage.getItem("team"+i) || ("Команда "+i), score:0});
+}
+
+// Вопросы и задания
+const tasks = {
+    1: "Перечислите как можно больше полезных привычек.",
+    2: "Перечислите продукты, богатые витаминами.",
+    3: "Перечислите виды физической активности.",
+    4: "Перечислите факторы, ухудшающие здоровье."
+};
+
+let answered = Array(Object.keys(tasks).length).fill(false);
+let currentQ = null;
+let timerInterval;
+let timeLeft = 30;
+
+// Отображение команд
+function renderTeams(){
+    let c = document.getElementById("teams-score");
+    c.innerHTML = "";
+    teams.forEach((t,i)=>{
+        c.innerHTML += `
+            <div class="team-round">
+                ${t.name}
+                <div class="score" id="s${i}">${t.score}</div>
+                <button class="btn" onclick="addTeamScore(${i})">+1</button>
+                <button class="btn minus" onclick="subTeamScore(${i})">-1</button>
+            </div>`;
+    });
+}
+function addTeamScore(i){ teams[i].score++; document.getElementById("s"+i).innerText=teams[i].score; }
+function subTeamScore(i){ teams[i].score--; document.getElementById("s"+i).innerText=teams[i].score; }
+
+// Отображение вопросов
+function renderQuestions(){
+    let c = document.getElementById("questions-container");
+    c.innerHTML = "";
+    Object.keys(tasks).forEach(num=>{
+        let btn = document.createElement("button");
+        btn.className = "question-btn";
+        btn.innerText = "Вопрос " + num;
+        if(answered[num-1]){
+            btn.disabled = true;
+        } else {
+            btn.onclick = ()=> openModal(num);
+        }
+        c.appendChild(btn);
+    });
+}
+
+// Заполнение селекта команд
+function fillTeamSelect(){
+    let sel = document.getElementById("team-select");
+    sel.innerHTML = "";
+    teams.forEach((t,i)=>{
+        let opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = t.name;
+        sel.appendChild(opt);
+    });
+}
+
+// Модалка
+function openModal(num){
+    currentQ = num;
+    document.getElementById("question-title").innerText = "Вопрос " + num;
+    document.getElementById("task-text").innerText = tasks[num];
+    document.getElementById("counter").innerText = 0;
+    timeLeft = 30;
+    document.getElementById("timer").innerText = timeLeft;
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(()=>{
+        timeLeft--;
+        document.getElementById("timer").innerText = timeLeft;
+        if(timeLeft <= 0) clearInterval(timerInterval);
+    },1000);
+
+    document.getElementById("modal").style.display = "flex";
+    fillTeamSelect();
+}
+
+// Счётчик очков за 30 сек
+function addPoint(){
+    let c = document.getElementById("counter");
+    c.innerText = Number(c.innerText)+1;
+}
+
+// Закрытие модалки
+function closeModal(){
+    document.getElementById("modal").style.display = "none";
+    clearInterval(timerInterval);
+
+    let teamIdx = parseInt(document.getElementById("team-select").value);
+    let points = Number(document.getElementById("counter").innerText);
+    teams[teamIdx].score += points;
+    document.getElementById("s"+teamIdx).innerText = teams[teamIdx].score;
+
+    answered[currentQ-1] = true;
+    renderQuestions();
+}
+
+// Инициализация
+renderTeams();
+renderQuestions();
+</script>
+
+</body>
+</html>

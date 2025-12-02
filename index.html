@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Мы за ЗОЖ — Игра</title>
+<style>
+    body { margin:0; padding:0; font-family:Arial; background:#e8f5e9; }
+    .header { width:100%; background:#2e7d32; color:white; padding:20px 0; text-align:center; font-size:34px; font-weight:bold; position:fixed; top:0; left:0; z-index:1000; }
+    .screen { display:none; padding:120px 40px 40px; text-align:center; }
+    .active { display:block; }
+    h1 { font-size:30px; margin-bottom:25px; }
+    .teams-container { display:flex; justify-content:center; flex-wrap:wrap; gap:25px; margin-top:30px; }
+    .team-block { width:150px; height:150px; background:white; box-shadow:0 0 10px rgba(0,0,0,0.2); border-radius:15px; display:flex; justify-content:center; align-items:center; text-align:center; cursor:pointer; font-size:20px; font-weight:bold; position:relative; }
+    .team-input-field { width:90%; padding:8px; font-size:18px; border:1px solid #aaa; border-radius:8px; display:none; text-align:center; position:absolute; bottom:15px; }
+    button { margin-top:30px; padding:12px 25px; font-size:20px; border:none; border-radius:8px; background:#43a047; color:white; cursor:pointer; }
+    button:hover { background:#2e7d32; }
+    .rounds-container { display:flex; flex-wrap:wrap; justify-content:center; gap:25px; margin-top:40px; }
+    .round-block { width:260px; padding:25px; background:#ffffff; border-radius:15px; font-size:22px; font-weight:bold; cursor:pointer; box-shadow:0 0 10px rgba(0,0,0,0.2); transition:0.2s; }
+    .round-block:hover { transform:scale(1.05); background:#c8e6c9; }
+</style>
+</head>
+<body>
+
+<div class="header">Мы за ЗОЖ</div>
+
+<!-- ЭКРАН 1 — ВВОД КОМАНД -->
+<div id="screen1" class="screen active">
+    <h1>Введите названия команд</h1>
+    <div class="teams-container">
+        <div class="team-block" onclick="editTeam(1)"><span id="label1">Команда 1</span><input id="t1" class="team-input-field" placeholder="Название"></div>
+        <div class="team-block" onclick="editTeam(2)"><span id="label2">Команда 2</span><input id="t2" class="team-input-field" placeholder="Название"></div>
+        <div class="team-block" onclick="editTeam(3)"><span id="label3">Команда 3</span><input id="t3" class="team-input-field" placeholder="Название"></div>
+        <div class="team-block" onclick="editTeam(4)"><span id="label4">Команда 4</span><input id="t4" class="team-input-field" placeholder="Название"></div>
+        <div class="team-block" onclick="editTeam(5)"><span id="label5">Команда 5</span><input id="t5" class="team-input-field" placeholder="Название"></div>
+    </div>
+    <button onclick="saveTeams(); goToRounds()">Продолжить</button>
+</div>
+
+<!-- ЭКРАН 2 — ВЫБОР РАУНДА -->
+<div id="screen2" class="screen">
+    <h1>Выберите раунд</h1>
+    <div class="rounds-container">
+        <div class="round-block" onclick="openRound(1)">Раунд 1 — Своя игра</div>
+        <div class="round-block" onclick="openRound(2)">Раунд 2 — Правда или миф?</div>
+        <div class="round-block" onclick="openRound(3)">Раунд 3 — Блиц</div>
+        <div class="round-block" onclick="openRound(4)">Раунд 4 — Угадай по описанию</div>
+    </div>
+</div>
+
+<script>
+function editTeam(num){
+    let label = document.getElementById("label"+num);
+    let input = document.getElementById("t"+num);
+    label.style.display="none";
+    input.style.display="block";
+    input.focus();
+    input.onblur = () => {
+        if(input.value.trim()!=="") label.innerText = input.value.trim();
+        label.style.display="block";
+        input.style.display="none";
+    }
+}
+
+// Сохраняем команды в localStorage
+function saveTeams(){
+    for(let i=1;i<=5;i++){
+        let name = document.getElementById("t"+i).value.trim() || ("Команда "+i);
+        localStorage.setItem("team"+i,name);
+    }
+}
+
+// Переход на экран выбора раунда
+function goToRounds(){
+    saveTeams();
+    document.getElementById("screen1").classList.remove("active");
+    document.getElementById("screen2").classList.add("active");
+}
+
+// Открытие раунда
+function openRound(num){
+    window.location.href = "round"+num+".html";
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Раунд 1 — Своя игра</title>
+<style>
+body { margin:0; padding:0; font-family: Arial,sans-serif; background: #e8f5e9;}
+.header { width:100%; background:#2e7d32; color:white; padding:20px 0; text-align:center; font-size:34px; font-weight:bold; }
+h1 { text-align:center; margin-top:20px; }
+.teams-container { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin:20px 0; }
+.team-round { width:160px; height:160px; background:white; border-radius:15px; box-shadow:0 0 10px rgba(0,0,0,0.2); display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:18px; font-weight:bold; }
+.score { font-size:30px; margin:10px 0; }
+.btn { padding:5px 12px; font-size:18px; margin:2px; border:none; border-radius:6px; background:#43a047; color:white; cursor:pointer; }
+.btn.minus { background:#c62828; }
+table { width:100%; border-collapse:collapse; margin-top:25px; }
+th { background:#1b5e20; color:white; padding:15px; font-size:20px; }
+td { padding:15px; font-size:22px; text-align:center; cursor:pointer; background:#4caf50; color:white; border:2px solid white; }
+td.used { background:#bdbdbd !important; color:#555 !important; cursor:not-allowed !important; }
+#modal { position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; justify-content:center; align-items:center; }
+#modal-content { background:white; padding:30px; border-radius:15px; width:600px; text-align:center; }
+#answer { display:none; margin-top:20px; font-size:22px; color:#1b5e20; font-weight:bold; }
+#timer { font-size:28px; margin-bottom:15px; color:#d32f2f; font-weight:bold; }
+</style>
+</head>
+<body>
+
+<div class="header">Раунд 1 — Своя игра</div>
+
+<div id="game-area">
+    <h1>Счёт команд</h1>
+    <div class="teams-container" id="teams-score"></div>
+
+    <table>
+        <tr><th>Питание</th><th>Физ. активность</th><th>Сон</th><th>Вредные привычки</th><th>Первая помощь</th></tr>
+        <tbody id="questions-table"></tbody>
+    </table>
+</div>
+
+<!-- МОДАЛКА -->
+<div id="modal">
+    <div id="modal-content">
+        <div id="timer"></div>
+        <h2 id="question"></h2>
+        <button class="btn" onclick="showAnswer()">Показать ответ</button>
+        <div id="answer"></div>
+        <br>
+        <button class="btn" onclick="closeModal()">Закрыть</button>
+    </div>
+</div>
+
+<script>
+/* ==== Имена команд из localStorage ==== */
+let teamNames = [];
+for(let i=1;i<=5;i++){
+    teamNames.push(localStorage.getItem("team"+i) || ("Команда "+i));
+}
+
+/* ====== ВОПРОСЫ ====== */
+const questions = [
+    [["Какой прием пищи считается самым важным?","Завтрак"],
+     ["Сколько порций овощей и фруктов нужно съедать в день?","5 порций"],
+     ["Какой тип углеводов полезнее — простые или сложные?","Сложные"],
+     ["Назовите 3 источника полезных жиров.","Орехи, рыба, авокадо, масло"],
+     ["Что такое индекс массы тела и какая формула его вычисления?","Масса (кг)/рост² (м²)"]],
+
+    [["Сколько шагов в день рекомендуется проходить?","7000–10000"],
+     ["МСколько минут активности в неделю рекомендует ВОЗ?","150 минут умеренной нагрузки"],
+     ["Какой пульс называют “рабочим” во время тренировки?","60–80% от максимального"],
+     ["Назовите три вида аэробной нагрузки","Бег, плавание, ходьба, велосипед"],
+     ["Что опаснее: гиподинамия или кратковременная перегрузка?","Гиподинамия (длительное отсутствие движения)"]],
+
+    [["Сколько часов сна нужно студенту?","7–9 часов"],
+     ["Какой гормон регулирует сон?","Мелатонин"],
+     ["Назовите 2 признака хронического стресса.","Раздражительность, нарушение сна, головные боли, усталость"],
+     ["Назовите один безопасный способ быстрого снятия тревоги.","Медленное дыхание 4–4–6, растяжка, прогулка"],
+     ["Что такое гигиена сна? Назовите 3 правила.","Режим, отсутствие гаджетов за 1 час, прохладная комната, световой режим"]],
+
+    [["Какой орган страдает первым при курении?","Легкие"],
+     ["Что вызывают энергетические напитки при частом употреблении?","Тахикардию, бессонницу, обезвоживание"],
+     ["Как называется зависимость от никотина?","Никотиновая зависимость"],
+     ["Почему “вейпы” НЕ являются полностью безопасными?","Токсичные ароматизаторы, никотин, угроза ХОБЛ"],
+     ["Перечислите 3 долгосрочных последствия злоупотребления алкоголем.","Цирроз, кардиомиопатия, когнитивные нарушения"]],
+
+    [["Что нужно сделать при ожоге первой степени ?","Охладить место ожога проточной водой 10–15 минут"],
+     ["Какое первое действие при порезе?","Остановить кровотечение"],
+     ["Какой пульс считается нормальным у взрослого?","60–90 уд/мин"],
+     ["Как узнать, есть ли дыхание у человека без сознания?","Слушать, смотреть на движения грудной клетки, ощущать потоки воздуха"],
+     ["Какие действия нужно предпринять при потере сознания?","Проверить дыхание, придать стабильное боковое положение, вызвать скорую помощь"]]
+];
+
+let currentCell = null;
+
+/* ==== Создание счёта ==== */
+function createScoreboard(){
+    let zone = document.getElementById("teams-score");
+    zone.innerHTML = "";
+    for(let i=0;i<5;i++){
+        zone.innerHTML += `
+            <div class="team-round">
+                ${teamNames[i]}
+                <div class="score" id="s${i}">0</div>
+                <button class="btn" onclick="addScore(${i})">+1</button>
+                <button class="btn minus" onclick="subScore(${i})">-1</button>
+            </div>`;
+    }
+}
+function addScore(n){ document.getElementById("s"+n).innerText++; }
+function subScore(n){ document.getElementById("s"+n).innerText--; }
+
+/* ==== Таблица вопросов ==== */
+function createQuestionsTable(){
+    let tbody="";
+    for(let i=0;i<5;i++){
+        tbody += "<tr>";
+        for(let j=0;j<5;j++){
+            tbody += `<td onclick="openQuestion(${j},${i},this)">${i+1}</td>`;
+        }
+        tbody += "</tr>";
+    }
+    document.getElementById("questions-table").innerHTML = tbody;
+}
+
+/* ==== Модалка ==== */
+let timerInterval;
+
+function openQuestion(cat,num,cell){
+    if(cell.classList.contains("used")) return;
+
+    currentCell = cell;
+    document.getElementById("question").innerText = questions[cat][num][0];
+    document.getElementById("answer").innerText = questions[cat][num][1];
+    document.getElementById("answer").style.display="none";
+    document.getElementById("modal").style.display="flex";
+
+    startTimer();
+}
+
+function startTimer(){
+    clearInterval(timerInterval);
+    let time = 20;
+    document.getElementById("timer").innerText = time+" сек";
+    timerInterval = setInterval(()=>{
+        time--;
+        document.getElementById("timer").innerText = time+" сек";
+        if(time<=0){ clearInterval(timerInterval); }
+    },1000);
+}
+
+function showAnswer(){ document.getElementById("answer").style.display="block"; }
+
+function closeModal(){
+    document.getElementById("modal").style.display="none";
+    currentCell.classList.add("used");
+    clearInterval(timerInterval);
+}
+
+/* ==== Запуск сразу ==== */
+createScoreboard();
+createQuestionsTable();
+</script>
+
+</body>
+</html>
